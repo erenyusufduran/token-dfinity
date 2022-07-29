@@ -1,13 +1,22 @@
 import React, { useState } from "react";
-import { token } from "../../../declarations/token";
+import { canisterId, createActor } from "../../../declarations/token";
+import { AuthClient } from "@dfinity/auth-client";
 
-function Faucet() {
+function Faucet(props) {
   const [isDisabled, setDisable] = useState(false);
   const [buttonText, setText] = useState("Gimme gimme");
 
-  async function handleClick(event) {
+  async function handleClick() {
     setDisable(true);
-    const result = await token.payOut();
+
+    const authClient = await AuthClient.create();
+    const identity = await authClient.getIdentity();
+
+    const authenticatedCanister = createActor(canisterId, {
+      agentOptions: { identity },
+    });
+
+    const result = await authenticatedCanister.payOut();
     setText(result);
   }
 
@@ -20,8 +29,7 @@ function Faucet() {
         Faucet
       </h2>
       <label>
-        Get your free QROXYN tokens here! Claim 10,000 QROX tokens to your
-        account.
+        Get your free QROXYN tokens here! Claim 10,000 QROX tokens to {props.userPrincipal}.
       </label>
       <p className="trade-buttons">
         <button id="btn-payout" onClick={handleClick} disabled={isDisabled}>
