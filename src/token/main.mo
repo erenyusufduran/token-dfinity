@@ -1,14 +1,18 @@
 import Principal "mo:base/Principal";
 import HashMap "mo:base/HashMap";
 import Debug "mo:base/Debug";
+import Iter "mo:base/Iter";
 
 actor Token {
-    var owner: Principal = Principal.fromText("lgmzr-vzxkm-q4cbn-macxu-mrqyy-epalq-zecru-hxmf4-caob2-t4x6j-tae");
-    var totalSupply: Nat = 1 * (10 ** 9);
-    var symbol : Text = "QROX";
+    let owner: Principal = Principal.fromText("lgmzr-vzxkm-q4cbn-macxu-mrqyy-epalq-zecru-hxmf4-caob2-t4x6j-tae");
+    let totalSupply: Nat = 1 * (10 ** 9);
+    let symbol : Text = "QROX";
 
-    var balances = HashMap.HashMap<Principal, Nat>(1, Principal.equal, Principal.hash);
-    balances.put(owner, totalSupply);
+    private stable var balancesEntries: [(Principal, Nat)] = [];
+    private var balances = HashMap.HashMap<Principal, Nat>(1, Principal.equal, Principal.hash);
+    if (balances.size() < 1) {
+        balances.put(owner, totalSupply);
+    };
 
     public query func balanceOf(who: Principal) : async Nat {
 
@@ -45,5 +49,16 @@ actor Token {
             return "Success.";
         };
         return "Insufficient Funds.";
-    }
+    };
+
+    system func preupgrade() {
+        balancesEntries := Iter.toArray(balances.entries());
+    };
+
+    system func postupgrade() {
+        balances := HashMap.fromIter<Principal, Nat>(balancesEntries.vals(), 1, Principal.equal, Principal.hash);
+        if (balances.size() < 1) {
+            balances.put(owner, totalSupply);
+        };
+    };
 };
